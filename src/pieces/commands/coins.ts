@@ -1,6 +1,6 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { ApplicationCommandRegistry, Awaitable, Command } from '@sapphire/framework';
-import { bold, ChatInputCommandInteraction } from 'discord.js';
+import { bold, ChatInputCommandInteraction, Colors } from 'discord.js';
 
 @ApplyOptions<Command.Options>({
   name: 'coins',
@@ -17,6 +17,7 @@ export class Coins extends Command {
       embeds: [
         {
           title: `${user.globalName}'s coins`,
+          color: Colors.Gold,
           description: `${bold(db.economy.coins.toLocaleString() + ' CC')} at the moment.`
         }
       ]
