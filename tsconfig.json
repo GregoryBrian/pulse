@@ -1,12 +1,12 @@
 {
-	"extends": "@sapphire/ts-config/extra-strict",
-	"compilerOptions": {
-		"outDir": "./dist",
-		"module": "NodeNext",
-		"experimentalDecorators": true,
-		"skipLibCheck": true,
-		"emitDecoratorMetadata": true,
-		"noUnusedParameters": true,
-		"noUnusedLocals": true
-	}
+  "extends": "@sapphire/ts-config/extra-strict",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "module": "NodeNext",
+    "experimentalDecorators": true,
+    "skipLibCheck": true,
+    "emitDecoratorMetadata": true,
+    "noUnusedParameters": true,
+    "noUnusedLocals": true
+  }
 }

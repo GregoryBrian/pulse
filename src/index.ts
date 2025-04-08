@@ -7,8 +7,8 @@ import { PiecesPath } from './utilities/paths.js';
 import { DatabaseConnector } from './database/connector/Connector.js';
 
 const pulse = new SapphireClient({
-	intents: [GatewayIntentBits.MessageContent, GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
-	baseUserDirectory: PiecesPath
+  intents: [GatewayIntentBits.MessageContent, GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+  baseUserDirectory: PiecesPath
 });
 
 await pulse.login();

@@ -1,44 +1,44 @@
 {
-	"name": "pulse",
-	"version": "1.0.0",
-	"description": "A currency discord bot.",
-	"main": "dist/index.js",
-	"scripts": {
-		"format": "prettier --write .",
-		"start": "node dist/index.js",
-		"build": "rimraf ./dist && tsc --project tsconfig.json"
-	},
-	"keywords": [
-		"currency",
-		"discord-bot",
-		"typescript",
-		"economy"
-	],
-	"author": "grgry06",
-	"license": "ISC",
-	"devDependencies": {
-		"@sapphire/prettier-config": "^2.0.0",
-		"@sapphire/ts-config": "^5.0.1",
-		"@types/node": "^22.14.0",
-		"dotenv-cra": "^3.0.3",
-		"prettier": "^3.5.3",
-		"rimraf": "^6.0.1",
-		"typescript": "^5.8.3"
-	},
-	"dependencies": {
-		"@sapphire/decorators": "^6.1.1",
-		"@sapphire/discord-utilities": "^3.4.4",
-		"@sapphire/discord.js-utilities": "^7.3.2",
-		"@sapphire/framework": "^5.3.3",
-		"@sapphire/pieces": "^4.3.2",
-		"@sapphire/plugin-utilities-store": "^2.0.2",
-		"@sapphire/result": "^2.7.2",
-		"@sapphire/time-utilities": "^1.7.14",
-		"@sapphire/timestamp": "^1.0.5",
-		"@sapphire/utilities": "^3.18.2",
-		"@typegoose/typegoose": "^12.14.0",
-		"discord.js": "^14.18.0",
-		"mongoose": "^8.13.2"
-	},
-	"type": "module"
+  "name": "pulse",
+  "version": "1.0.0",
+  "description": "A currency discord bot.",
+  "main": "dist/index.js",
+  "scripts": {
+    "format": "prettier --write .",
+    "start": "node dist/index.js",
+    "build": "rimraf ./dist && tsc --project tsconfig.json"
+  },
+  "keywords": [
+    "currency",
+    "discord-bot",
+    "typescript",
+    "economy"
+  ],
+  "author": "grgry06",
+  "license": "ISC",
+  "devDependencies": {
+    "@sapphire/prettier-config": "^2.0.0",
+    "@sapphire/ts-config": "^5.0.1",
+    "@types/node": "^22.14.0",
+    "dotenv-cra": "^3.0.3",
+    "prettier": "^3.5.3",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@sapphire/decorators": "^6.1.1",
+    "@sapphire/discord-utilities": "^3.4.4",
+    "@sapphire/discord.js-utilities": "^7.3.2",
+    "@sapphire/framework": "^5.3.3",
+    "@sapphire/pieces": "^4.3.2",
+    "@sapphire/plugin-utilities-store": "^2.0.2",
+    "@sapphire/result": "^2.7.2",
+    "@sapphire/time-utilities": "^1.7.14",
+    "@sapphire/timestamp": "^1.0.5",
+    "@sapphire/utilities": "^3.18.2",
+    "@typegoose/typegoose": "^12.14.0",
+    "discord.js": "^14.18.0",
+    "mongoose": "^8.13.2"
+  },
+  "type": "module"
 }

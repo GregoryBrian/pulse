@@ -8,13 +8,13 @@ import { PlayerManager } from '../managers/Player.js';
  * @author BrianWasTaken
  */
 export class DatabaseManagers {
-	/**
-	 * The PlayerManager instance.
-	 */
-	public readonly player = new PlayerManager();
+  /**
+   * The PlayerManager instance.
+   */
+  public readonly player = new PlayerManager();
 
-	/**
-	 * The EconomyManager instance.
-	 */
-	public readonly economy = new EconomyManager();
+  /**
+   * The EconomyManager instance.
+   */
+  public readonly economy = new EconomyManager();
 }

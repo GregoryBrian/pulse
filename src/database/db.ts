@@ -1,3 +1,3 @@
 export const db = {
-	players: new Function()
+  players: new Function()
 } as const;

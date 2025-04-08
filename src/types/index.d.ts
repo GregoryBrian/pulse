@@ -25,10 +25,10 @@ type ReturnPromiseValue<P> = P extends Promise<infer V> | Awaitable<infer V> ? V
  * @template V The value's type.
  */
 interface Payload<V> {
-	/**
-	 * The containing value.
-	 */
-	value: V;
+  /**
+   * The containing value.
+   */
+  value: V;
 }
 
 /**
