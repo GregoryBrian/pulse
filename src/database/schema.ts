@@ -19,6 +19,15 @@ export abstract class ParentSchema {
   public readonly _id!: string;
 }
 
+/**
+ * Represents the interface for all schemas.
+ */
+export declare interface Schemas {}
+
+/**
+ * Represents the base class for all child schemas.
+ * @template Id The id of the child schema.
+ */
 export abstract class ChildSchema<Id extends string | number> {
   @prop({ type: mongoose.SchemaTypes.Mixed, immutable: true })
   public readonly id!: Id;
@@ -119,7 +128,7 @@ export abstract class ChildSchemaManager<T extends ChildSchema<string | number>,
    * Returns a map of ids to subschema pairs via the {@link Collection collection} utility by discord.js
    */
   public get collection() {
-    return container.utilities['array'].toCollection(this.entries, (entry) => entry.id);
+    return container.utilities['iterable'].toCollection(this.entries, (entry) => entry.id);
   }
 
   /**
@@ -135,7 +144,7 @@ export abstract class ChildSchemaManager<T extends ChildSchema<string | number>,
    * @returns The constructed subschema.
    */
   public create(...args: A): T {
-    return container.utilities['array'].insert(this.entries, Reflect.construct(this.Constructor, args));
+    return container.utilities['iterable'].insertElement(this.entries, Reflect.construct(this.Constructor, args));
   }
 
   /**
@@ -153,7 +162,7 @@ export abstract class ChildSchemaManager<T extends ChildSchema<string | number>,
    * @returns The subschema.
    */
   public extract(id: T['id']) {
-    return container.utilities['array'].extract(this.entries, (elem) => elem.id === id);
+    return container.utilities['iterable'].extractElement(this.entries, (elem) => elem.id === id);
   }
 
   /**

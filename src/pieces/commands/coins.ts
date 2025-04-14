@@ -38,17 +38,16 @@ export class Coins extends Command {
 
 @ApplyOptions<Command.Options>({
   name: 'add',
-  description: 'View your coins.'
+  description: 'Add random amount of coins.'
 })
 export class Add extends Command {
   public override async chatInputRun(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
 
     const db = await this.container.db.managers.player.fetch(interaction.user.id);
-    const amount = this.container.utilities['number'].getRandomNumber(1, 1_000_000_000) * 10;
+    const amount = this.container.utilities['number'].getRandomNumber(1, 100) * 1e6;
 
-    db.economy.coins += amount;
-    await db.save();
+    await this.container.db.managers.player.update(interaction.user.id, (doc) => (doc.economy.coins += amount));
 
     await interaction.editReply(
       `You just received ${bold(amount.toLocaleString() + ' CC')} from the gods!\nYou have ${bold(db.economy.coins.toLocaleString() + ' CC')} now.`

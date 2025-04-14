@@ -115,6 +115,36 @@ export class IterableUtilities extends Utility {
 
     return removed.at(0) ?? null;
   };
+
+  /**
+   * Converts a normal array into a readonly array.
+   * @param arr The source array.
+   * @returns The array.
+   */
+  public toReadonly = <T>(arr: T[]): ReadonlyArray<T> => {
+    return Object.freeze(arr);
+  };
+
+  /**
+   * Converts a readonly array into a normal array.
+   * @param arr The source array.
+   * @template T The elements' type.
+   * @returns The array.
+   */
+  public fromReadonly = <T>(arr: ReadonlyArray<T>): T[] => {
+    return Object.values(arr);
+  };
+
+  /**
+   * Checks if the array is readonly.
+   * @param arr The source array.
+   * @template T The elements' type.
+   * @description Checks if the array is readonly.
+   * @returns true if the array is readonly, false otherwise.
+   */
+  public isReadonly = <T>(arr: T[]): boolean => {
+    return Object.isFrozen(arr);
+  };
 }
 
 export namespace IterableUtilities {

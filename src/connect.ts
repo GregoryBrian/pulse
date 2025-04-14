@@ -1,5 +1,5 @@
-import { SapphireClient } from "@sapphire/framework";
-import { container } from "@sapphire/pieces";
+import { SapphireClient } from '@sapphire/framework';
+import { container } from '@sapphire/pieces';
 
 /**
  * Connects the SapphireClient to Discord, retrying on failure.
@@ -11,21 +11,21 @@ import { container } from "@sapphire/pieces";
  * @returns A promise that resolves when the client is connected to Discord.
  */
 export default async function connect(client: SapphireClient, maxRetries = 5, timeout = 15_000): Promise<void> {
-    let attempts = 0;
+  let attempts = 0;
 
-    while (true) {
-        try {
-            await client.login();
-            break;
-        } catch (err) {
-            attempts++;
-            void client.logger.info(err);
-            await container.utilities['promise'].wait(timeout);
-        }
+  while (true) {
+    try {
+      await client.login();
+      break;
+    } catch (err) {
+      attempts++;
+      void client.logger.info(err);
+      await container.utilities['promise'].wait(timeout);
     }
+  }
 
-    if (attempts >= maxRetries) {
-        void client.logger.info(`Unable to connect to Discord after ${attempts} attempts. Exiting`);
-        void process.exit(1);
-    }
+  if (attempts >= maxRetries) {
+    void client.logger.info(`Unable to connect to Discord after ${attempts} attempts. Exiting`);
+    void process.exit(1);
+  }
 }
