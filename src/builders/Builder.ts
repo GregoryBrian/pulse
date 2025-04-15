@@ -396,6 +396,11 @@ export abstract class InteractionMessageBuilder<
   public tts?: InteractionReplyOptions['tts'];
   public message?: InteractionEditReplyOptions['message'];
 
+  public setWithResponse(withResponse: boolean): this {
+    this.withResponse = withResponse;
+    return this;
+  }
+
   public override setContent(content: string): this {
     this.content = content;
     return this;

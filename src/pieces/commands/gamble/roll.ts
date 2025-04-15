@@ -22,7 +22,7 @@ export default class extends Command {
     //   if (user > bot) [user, bot] = [bot, user];
     // }
 
-    const winnings = user > bot ? Math.round(betAmount * (0.01 + Math.random() * 2.04)) : user === bot ? 0 : -betAmount;
+    const winnings = user > bot ? Math.round(betAmount * (0.01 + Math.random() * 2.09)) : user === bot ? 0 : -betAmount;
 
     if (betAmount >= db.economy.coins) {
       return interaction.editReply({

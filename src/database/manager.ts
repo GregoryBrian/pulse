@@ -42,7 +42,8 @@ export class Manager<T extends ParentSchema> extends Collection<T['_id'], T> {
 
     if (entry) {
       void this.set(id, doc);
-      return void entry.refresh();
+      void entry.refresh();
+      return;
     }
 
     this.set(id, doc);

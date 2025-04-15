@@ -6,8 +6,12 @@ import {
   ButtonBuilder,
   ComponentType,
   EmbedBuilder,
+  MessageCreateOptions,
+  MessageEditOptions,
   MessageMentionOptions,
+  ReplyOptions,
   RestOrArray,
+  StickerResolvable,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder
 } from 'discord.js';
@@ -15,7 +19,7 @@ import { CreateFunctionType } from '../types/index.js';
 import { Mixin } from 'ts-mixer';
 import { container } from '@sapphire/pieces';
 
-/**
+/**m
  * The base class for all builders.
  */
 export abstract class Builder {
@@ -276,6 +280,96 @@ export abstract class BaseMessageBuilder<TComponents extends ComponentRowBuilder
     const { extractElement, fromReadonly } = container.utilities['iterable'];
 
     void extractElement(fromReadonly((this.files ??= [])), (_, index) => index === fileIndex);
+
+    return this;
+  }
+}
+
+export class MessageBuilder<TComponents extends ComponentRowBuilder.ComponentTypes = ComponentRowBuilder.ComponentTypes>
+  extends BaseMessageBuilder<TComponents>
+  implements MessageCreateOptions
+{
+  public override content?: MessageCreateOptions['content'];
+  public reply?: MessageCreateOptions['reply'];
+  public tts?: MessageCreateOptions['tts'];
+  public nonce?: MessageCreateOptions['nonce'];
+  public stickers?: MessageCreateOptions['stickers'];
+  public flags?: MessageCreateOptions['flags'];
+
+  public override setContent(content: string | null): this {
+    if (isNullish(content)) {
+      delete this.content;
+    } else {
+      this.content = content;
+    }
+
+    return this;
+  }
+
+  public setReply(options: ReplyOptions | null) {
+    if (isNullish(options)) {
+      delete this.reply;
+    } else {
+      this.reply = options;
+    }
+
+    return this;
+  }
+
+  public setTTS(tts: boolean | null) {
+    if (isNullish(tts)) {
+      delete this.tts;
+    } else {
+      this.tts = tts;
+    }
+
+    return this;
+  }
+
+  public setNonce(nonce: string | number | null) {
+    if (isNullish(nonce)) {
+      delete this.nonce;
+    } else {
+      this.nonce = nonce;
+    }
+
+    return this;
+  }
+
+  public setStickers(stickers: StickerResolvable[]) {
+    this.stickers ??= [] = stickers;
+    return this;
+  }
+
+  public setFlags(flags: Exclude<MessageCreateOptions['flags'], undefined> | null) {
+    if (isNullish(flags)) {
+      delete this.flags;
+    } else {
+      this.flags = flags;
+    }
+
+    return this;
+  }
+}
+
+export class EditMessageBuilder<TComponents extends ComponentRowBuilder.ComponentTypes = ComponentRowBuilder.ComponentTypes>
+  extends BaseMessageBuilder<TComponents>
+  implements MessageEditOptions
+{
+  public override content?: string | null;
+  public flags?: MessageEditOptions['flags'];
+
+  public override setContent(content: string | null): this {
+    this.content = content;
+    return this;
+  }
+
+  public setFlags(flags: Exclude<MessageEditOptions['flags'], undefined> | null) {
+    if (isNullish(flags)) {
+      delete this.flags;
+    } else {
+      this.flags = flags;
+    }
 
     return this;
   }
