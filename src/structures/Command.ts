@@ -69,7 +69,7 @@ export abstract class QueuedCommand extends Command<Args, QueuedCommandOptions> 
     return {
       interaction,
       responder: null,
-      db: () => this.container.db.managers.player.fetch(interaction.user.id)
+      db: () => this.container.db.managers.Player.fetch(interaction.user.id)
     };
   }
 

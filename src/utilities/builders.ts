@@ -1,60 +1,47 @@
-import { AnyReadonlyArray, Ctor, isFunction, isNullish, isNullOrUndefined } from '@sapphire/utilities';
+import { container } from '@sapphire/framework';
+import { type Ctor, isFunction, isNullish, isNullOrUndefined } from '@sapphire/utilities';
+import type { Attachment, InteractionUpdateOptions, MessageEditAttachmentData, PollData } from 'discord.js';
 import {
   ActionRowBuilder,
-  AttachmentBuilder,
-  BaseMessageOptions,
   ButtonBuilder,
-  ComponentType,
-  EmbedBuilder,
-  MessageCreateOptions,
-  MessageEditOptions,
-  MessageMentionOptions,
-  ReplyOptions,
-  RestOrArray,
-  StickerResolvable,
+  type InteractionEditReplyOptions,
+  type InteractionReplyOptions,
   StringSelectMenuBuilder,
-  StringSelectMenuOptionBuilder
+  type RestOrArray,
+  StringSelectMenuOptionBuilder,
+  type BaseMessageOptions,
+  EmbedBuilder,
+  type MessageMentionOptions,
+  ComponentType,
+  AttachmentBuilder,
+  type MessageCreateOptions,
+  type ReplyOptions,
+  type StickerResolvable,
+  type MessageEditOptions
 } from 'discord.js';
-import { CreateFunctionType } from '../types/index.js';
 import { Mixin } from 'ts-mixer';
-import { container } from '@sapphire/pieces';
+import { CreateFunctionType } from '../types/index.js';
 
-/**m
+/**
  * The base class for all builders.
  */
 export abstract class Builder {
   /**
-   * The builder's type.
-   */
-  declare public ['constructor']: typeof this;
-
-  /**
    * Applies the callback function to this builder.
-   * @param fn The callback function.
+   * @param cb The callback function.
    * @returns This builder.
    */
-  public apply(fn: Builder.Callback<this>) {
-    return Builder.build(this, fn);
+  public apply(cb: Builder.Callback<this>) {
+    return Builder.build(this, cb);
   }
 
   /**
    * Applies the async callback function to this builder.
-   * @param fn The callback function.
+   * @param cb The callback function.
    * @returns This builder.
    */
-  public applyAsync(fn: Builder.Callback<this, Promise<this>>) {
-    return Builder.build(this, fn);
-  }
-
-  /**
-   * Creates a new builder class that extends the supplied class.
-   * @param ctor The builder class.
-   * @returns A new builder class that extends the supplied class.
-   * @template T The builder's type.
-   * @template A The builder's arguments type.
-   */
-  public static create<T, A extends AnyReadonlyArray = readonly any[]>(ctor: Ctor<A, T>) {
-    return Mixin(Builder, ctor);
+  public applyAsync(cb: Builder.Callback<this, Promise<this>>) {
+    return Builder.build(this, cb);
   }
 
   /**
@@ -76,7 +63,7 @@ export abstract class Builder {
    */
   public static flat<T, A extends unknown[] = []>(ctor: Ctor<A, T>, args: A, ...builders: RestOrArray<T> | RestOrArray<Builder.Callback<T>>) {
     return builders.flatMap((builder) => {
-      const build = (builder: T | Builder.Callback<T>) => (isFunction(builder) ? Builder.build(Reflect.construct(ctor, args), builder) : builder);
+      const build = (builder: T | Builder.Callback<T>) => (isFunction(builder) ? Builder.build(new ctor(...args), builder) : builder);
 
       return Array.isArray(builder) ? builder.map(build) : build(builder);
     });
@@ -91,7 +78,7 @@ export declare namespace Builder {
   type Callback<T, R = T> = CreateFunctionType<[this: T, builder: T], R>;
 }
 
-export class ComponentRowBuilder<T extends ComponentRowBuilder.ComponentTypes> extends Builder.create(ActionRowBuilder) {
+export class ComponentRowBuilder<T extends ComponentRowBuilder.ComponentTypes> extends Mixin(Builder, ActionRowBuilder) {
   declare public components: ComponentRowBuilder.ComponentMappings[T][];
   public type = ComponentType.ActionRow;
 
@@ -159,14 +146,14 @@ export declare namespace ComponentRowBuilder {
  * @extends Builder The project's universal builder class.
  * @extends ButtonBuilder The discord.js builder to inherit methods from.
  */
-export class ButtonComponentBuilder extends Builder.create(ButtonBuilder) {}
+export class ButtonComponentBuilder extends Mixin(Builder, ButtonBuilder) {}
 
 /**
  * Represents the builder for string select menus.
  * @extends Builder The project's universal builder class.
  * @extends StringSelectMenuBuilder The discord.js builder to inherit methods from.
  */
-export class StringSelectMenuComponentBuilder extends Builder.create(StringSelectMenuBuilder) {
+export class StringSelectMenuComponentBuilder extends Mixin(Builder, StringSelectMenuBuilder) {
   public override addOptions(...options: RestOrArray<Builder.Callback<StringSelectMenuOptionBuilder>>): this;
   public override addOptions(...options: RestOrArray<StringSelectMenuOptionBuilder>): this;
   public override addOptions(
@@ -181,19 +168,18 @@ export class StringSelectMenuComponentBuilder extends Builder.create(StringSelec
  * @extends Builder The project's universal builder class.
  * @extends EmbedBuilder The discord.js builder to inherit methods from.
  */
-export class MessageEmbedBuilder extends Builder.create(EmbedBuilder) {}
+export class MessageEmbedBuilder extends Mixin(Builder, EmbedBuilder) {}
 
 /**
  * Represents the builder for message attachments.
  * @extends Builder The project's universal builder class.
  * @extends EmbedBulder The discord.js builder to inherit methods from.
  */
-export class MessageAttachmentBuilder extends Builder.create(AttachmentBuilder) {}
+export class MessageAttachmentBuilder extends Mixin(Builder, AttachmentBuilder) {}
 
-//#region BaseMessageBuilder
-export abstract class BaseMessageBuilder<TComponents extends ComponentRowBuilder.ComponentTypes = ComponentRowBuilder.ComponentTypes>
+abstract class BaseMessageBuilder<TComponents extends ComponentRowBuilder.ComponentTypes = ComponentRowBuilder.ComponentTypes>
   extends Builder
-  implements Omit<BaseMessageOptions, 'content'>
+  implements Omit<BaseMessageOptions, 'content' | 'flags'>
 {
   public allowedMentions?: BaseMessageOptions['allowedMentions'];
   public components: BaseMessageOptions['components'] & ComponentRowBuilder<TComponents>[] = [];
@@ -211,7 +197,7 @@ export abstract class BaseMessageBuilder<TComponents extends ComponentRowBuilder
     return this;
   }
 
-  public addComponentRow(type: TComponents, rowCb: Builder.Callback<ComponentRowBuilder<TComponents>>) {
+  public addComponentRow<T extends TComponents>(type: T, rowCb: Builder.Callback<ComponentRowBuilder<T>>) {
     void container.utilities['iterable'].insertElement((this.components ??= []), Builder.build(new ComponentRowBuilder(type), rowCb));
 
     return this;
@@ -253,17 +239,20 @@ export abstract class BaseMessageBuilder<TComponents extends ComponentRowBuilder
   public abstract setContent(content: string): this;
 
   public addEmbed(embedCb: Builder.Callback<MessageEmbedBuilder>) {
-    const { insertElement, fromReadonly } = container.utilities['iterable'];
+    const { fromReadonly } = container.utilities['iterable'];
 
-    void insertElement(fromReadonly((this.embeds ??= [])), Builder.build(new MessageEmbedBuilder(), embedCb));
+    this.embeds ??= [];
+    this.embeds = fromReadonly([...this.embeds, Builder.build(new MessageEmbedBuilder(), embedCb)]);
 
     return this;
   }
 
   public removeEmbed(embedIndex: number) {
-    const { extractElement, fromReadonly } = container.utilities['iterable'];
+    const { fromReadonly } = container.utilities['iterable'];
 
-    void extractElement(fromReadonly((this.embeds ??= [])), (_, index) => index === embedIndex);
+    this.embeds ??= [];
+    this.embeds = fromReadonly([...this.embeds.filter((_, index) => index !== embedIndex)]);
+    // This is a workaround for the fact that we can't use `splice` on a readonly array
 
     return this;
   }
@@ -287,14 +276,13 @@ export abstract class BaseMessageBuilder<TComponents extends ComponentRowBuilder
 
 export class MessageBuilder<TComponents extends ComponentRowBuilder.ComponentTypes = ComponentRowBuilder.ComponentTypes>
   extends BaseMessageBuilder<TComponents>
-  implements MessageCreateOptions
+  implements Omit<MessageCreateOptions, 'flags'>
 {
   public override content?: MessageCreateOptions['content'];
   public reply?: MessageCreateOptions['reply'];
   public tts?: MessageCreateOptions['tts'];
   public nonce?: MessageCreateOptions['nonce'];
   public stickers?: MessageCreateOptions['stickers'];
-  public flags?: MessageCreateOptions['flags'];
 
   public override setContent(content: string | null): this {
     if (isNullish(content)) {
@@ -340,37 +328,69 @@ export class MessageBuilder<TComponents extends ComponentRowBuilder.ComponentTyp
     this.stickers ??= [] = stickers;
     return this;
   }
-
-  public setFlags(flags: Exclude<MessageCreateOptions['flags'], undefined> | null) {
-    if (isNullish(flags)) {
-      delete this.flags;
-    } else {
-      this.flags = flags;
-    }
-
-    return this;
-  }
 }
 
 export class EditMessageBuilder<TComponents extends ComponentRowBuilder.ComponentTypes = ComponentRowBuilder.ComponentTypes>
   extends BaseMessageBuilder<TComponents>
-  implements MessageEditOptions
+  implements Omit<MessageEditOptions, 'flags'>
 {
   public override content?: string | null;
-  public flags?: MessageEditOptions['flags'];
 
   public override setContent(content: string | null): this {
     this.content = content;
     return this;
   }
+}
 
-  public setFlags(flags: Exclude<MessageEditOptions['flags'], undefined> | null) {
-    if (isNullish(flags)) {
-      delete this.flags;
-    } else {
-      this.flags = flags;
-    }
+abstract class BaseInteractionMessageBuilder<
+  TComponents extends ComponentRowBuilder.ComponentTypes = ComponentRowBuilder.ComponentTypes,
+> extends BaseMessageBuilder<TComponents> {
+}
 
+export class InteractionMessageContentBuilder<TComponents extends ComponentRowBuilder.ComponentTypes = ComponentRowBuilder.ComponentTypes>
+  extends BaseInteractionMessageBuilder<TComponents>
+  implements Omit<InteractionReplyOptions, 'flags'>, Omit<InteractionEditReplyOptions, 'flags'>
+{
+  public withResponse?: boolean;
+  public threadId?: string;
+  public attachments?: readonly (Attachment | MessageEditAttachmentData)[];
+  public poll?: PollData;
+  public override content?: string;
+  public tts?: InteractionReplyOptions['tts'];
+  public message?: InteractionEditReplyOptions['message'];
+
+  public setWithResponse(withResponse: boolean): this {
+    this.withResponse = withResponse;
+    return this;
+  }
+
+  public override setContent(content: string): this {
+    this.content = content;
+    return this;
+  }
+
+  public setMessage(message: string): this {
+    this.message = message;
     return this;
   }
 }
+
+export class UpdateInteractionMessageBuilder<TComponents extends ComponentRowBuilder.ComponentTypes = ComponentRowBuilder.ComponentTypes>
+  extends BaseInteractionMessageBuilder<TComponents>
+  implements InteractionUpdateOptions
+{
+  public override content?: string | null;
+  public fetchReply?: boolean;
+
+  public override setContent(content: string): this {
+    this.content = content;
+    return this;
+  }
+
+  public setFetchReply(fetchReply: boolean): this {
+    this.fetchReply = fetchReply;
+    return this;
+  }
+}
+
+export class ReplyInteractionMessageBuilder {}

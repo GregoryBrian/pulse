@@ -1,27 +1,32 @@
 import { ApplyOptions } from '@sapphire/decorators';
-import { ApplicationCommandRegistry, Awaitable, Command } from '@sapphire/framework';
-import { bold, ChatInputCommandInteraction, Colors } from 'discord.js';
+import { ApplicationCommandRegistry, Awaitable } from '@sapphire/framework';
+import { bold, Colors } from 'discord.js';
+import { PulseCommand, PulseCommandOptions, PulseCommandRunContext } from '../../utilities/command.js';
 
-@ApplyOptions<Command.Options>({
+@ApplyOptions<PulseCommandOptions>({
   name: 'coins',
-  description: 'View your coins.'
+  description: 'View your coins.',
+  deferInitialReply: true,
 })
-export class Coins extends Command {
-  public override async chatInputRun(interaction: ChatInputCommandInteraction) {
-    await interaction.deferReply();
+export class Coins extends PulseCommand {
+  public override async run(ctx: PulseCommandRunContext) {
+    const user = ctx.interaction.options.getUser('user') ?? ctx.interaction.user;
+    const db = user.id === ctx.interaction.user.id ? ctx.player : await this.container.db.get('Player', user.id);
 
-    const user = interaction.options.getUser('user') ?? interaction.user;
-    const db = await this.container.db.managers.player.fetch(user.id);
-
-    await interaction.editReply({
-      embeds: [
-        {
-          title: `${user.globalName}'s coins`,
-          color: Colors.Gold,
-          description: `${bold(db.economy.coins.toLocaleString() + ' CC')} at the moment.`
-        }
-      ]
-    });
+    await ctx.responder.send((builder) =>
+      builder
+        .addEmbed((embed) =>
+          embed
+            .setTitle(`${user.globalName}'s coins`)
+            .setColor(Colors.Gold)
+            .setDescription(ctx.utilities['string'].createStackedText(
+              `:coin: ${bold(db.economy.coins.toLocaleString() + ' CC')}`,
+              `:bank: ${bold(db.economy.bank.toLocaleString() + ' CC')}`,
+            ))
+            .setFooter({ text: `Requested by ${ctx.interaction.user.globalName}` })
+            .setTimestamp()
+        )
+    );
   }
 
   public override registerApplicationCommands(registry: ApplicationCommandRegistry): Awaitable<void> {
@@ -36,22 +41,18 @@ export class Coins extends Command {
   }
 }
 
-@ApplyOptions<Command.Options>({
-  name: 'add',
-  description: 'Add random amount of coins.'
+@ApplyOptions<PulseCommandOptions>({
+  name: 'inject',
+  description: 'Inject random amount of coins.',
+  deferInitialReply: true,
 })
-export class Add extends Command {
-  public override async chatInputRun(interaction: ChatInputCommandInteraction) {
-    await interaction.deferReply();
+export class InjectCommand extends PulseCommand {
+  public override async run(ctx: PulseCommandRunContext) {
+    const coins = ctx.utilities['number'].getRandomNumber(1, 100) * 1e6;
 
-    const db = await this.container.db.managers.player.fetch(interaction.user.id);
-    const amount = this.container.utilities['number'].getRandomNumber(1, 100) * 1e6;
+    ctx.updatePlayer(db => db.economy.coins += coins);
 
-    await this.container.db.managers.player.update(interaction.user.id, (doc) => (doc.economy.coins += amount));
-
-    await interaction.editReply(
-      `You just received ${bold(amount.toLocaleString() + ' CC')} from the gods!\nYou have ${bold(db.economy.coins.toLocaleString() + ' CC')} now.`
-    );
+    await ctx.responder.send((builder) => builder.setContent(`You just received :coin: ${bold(coins.toLocaleString() + ' CC')} from the gods!`));
   }
 
   public override registerApplicationCommands(registry: ApplicationCommandRegistry): Awaitable<void> {

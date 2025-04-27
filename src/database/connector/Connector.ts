@@ -1,6 +1,6 @@
 import type { If } from 'discord.js';
 import mongoose, { type ConnectOptions } from 'mongoose';
-import { DatabaseManagers } from './Managers.js';
+import { DatabaseManagers, ReturnSchemaType } from './Managers.js';
 import { container } from '@sapphire/framework';
 
 /**
@@ -11,7 +11,7 @@ export class DatabaseConnector<IsConnected extends boolean = boolean> {
   /**
    * The database managers.
    */
-  public readonly managers = new DatabaseManagers();
+  public readonly managers = DatabaseManagers;
 
   /**
    * The default options for the connection.
@@ -64,6 +64,17 @@ export class DatabaseConnector<IsConnected extends boolean = boolean> {
   public isConnected(): If<IsConnected, true, false>;
   public isConnected(): boolean {
     return this.connection?.readyState === mongoose.ConnectionStates.connected;
+  }
+
+  /**
+   * Fetches a document from the database.
+   * @param manager The manager to fetch from.
+   * @param id The id of the document to fetch.
+   * @returns The document fetched from the database.
+   * @template M The type of the manager.
+   */
+  public get<M extends DatabaseManagers>(manager: M, id: string): Promise<ReturnSchemaType<M>> {
+    return this.managers[manager].fetch(id) as unknown as Promise<ReturnSchemaType<M>>;
   }
 }
 
