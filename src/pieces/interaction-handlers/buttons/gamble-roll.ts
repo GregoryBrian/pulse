@@ -17,11 +17,11 @@ export default class GambleRoll extends InteractionHandler {
   private getTimeoutMS(roll: RollGamblingGame): number {
     switch (roll.getOutcome()) {
       case RollGameOutcome.WIN: {
-        return 1_000;
+        return 250;
       }
 
       default: {
-        return 250;
+        return 100;
       }
     }
   }
@@ -44,9 +44,8 @@ export default class GambleRoll extends InteractionHandler {
 
   public override async run(interaction: ButtonInteraction<'cached'>, { value: bet, rolls }: GambleRoll.Parsed) {
     const ctx = InteractionContext.from({ interaction, responder: new Responder(interaction) });
-
     const { createStackedText, createTimeout } = { ...ctx.utilities['string'], ...ctx.utilities['promise'] };
-    const player = await ctx.database.getPlayer(ctx.user.id);
+    let player = await ctx.database.getPlayer(ctx.user.id);
 
     if (bet >= player.economy.coins) {
       return void (await ctx.responder.send((builder) => builder.setContent("You don't have enough coins to bet that much!")));
@@ -54,7 +53,7 @@ export default class GambleRoll extends InteractionHandler {
 
     const roll = new RollGamblingGame({
       bet,
-      multipliers: { min: 0, max: 2.5, bonus: 0 },
+      multipliers: { min: 0, max: 2, bonus: 0 },
       sides: 12,
       winningsType: RollGamblingGameWinningsType.Dice
     });
@@ -69,8 +68,8 @@ export default class GambleRoll extends InteractionHandler {
     void roll.run();
 
     await createTimeout(this.getTimeoutMS(roll), null);
-    await ctx.database.updatePlayer(ctx.user.id, (doc) => {
-      doc.economy.coins = Math.trunc(doc.economy.coins + roll.calculatedWinnings);
+    player = await ctx.database.updatePlayer(ctx.user.id, (doc) => {
+      doc.economy.coins = Math.trunc(doc.economy.coins + roll.net);
       return doc;
     });
 
@@ -85,7 +84,7 @@ export default class GambleRoll extends InteractionHandler {
               createStackedText(
                 `Coins: ${bold('CC ' + player.economy.coins.toLocaleString())}`,
                 `Winnings: ${bold('CC ' + Math.max(0, roll.calculatedWinnings).toLocaleString())}`,
-                subtext(`Net: ${bold(`CC ${roll.net.toLocaleString()}`)}\n`)
+                subtext(`Net: ${bold(`CC ${roll.getOutcome() !== RollGameOutcome.LOSE ? '+' : ''}${roll.net.toLocaleString()}`)}\n`)
               )
             )
             .addFields([

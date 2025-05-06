@@ -34,7 +34,7 @@ export class RollGamblingGame extends Mixin(RollGame, GamblingGame<RollGameOutco
       case RollGameOutcome.WIN: {
         WinningsType: switch (this.winningsType) {
           case RollGamblingGameWinningsType.Dice: {
-            winnings = this.bet * Number((1 + (diceDiff / diceMaxDiff) * (max - 1)).toFixed(2));
+            winnings = this.bet * (Math.round(Number((1 + (diceDiff / diceMaxDiff) * (max - 1)).toFixed(2)) * 100) / 100);
             break WinningsType;
           }
 
@@ -55,7 +55,7 @@ export class RollGamblingGame extends Mixin(RollGame, GamblingGame<RollGameOutco
       case RollGameOutcome.LOSE: {
         WinningsType: switch (this.winningsType) {
           case RollGamblingGameWinningsType.Dice: {
-            winnings = this.bet * Number((1 + diceDiff / diceMaxDiff).toFixed(2));
+            winnings = this.bet * (Math.round(Number((1 + diceDiff / diceMaxDiff).toFixed(2)) * 100) / 100);
             break WinningsType;
           }
 
@@ -70,5 +70,11 @@ export class RollGamblingGame extends Mixin(RollGame, GamblingGame<RollGameOutco
     }
 
     return (this.calculatedWinnings = Math.trunc(winnings));
+  }
+
+  public override run() {
+    super.run();
+    this.winnings;
+    return this;
   }
 }
