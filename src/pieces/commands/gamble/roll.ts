@@ -1,96 +1,114 @@
 import { ApplyOptions } from '@sapphire/decorators';
 import { ApplicationCommandRegistry, Awaitable } from '@sapphire/framework';
-import { bold, ButtonStyle, Colors, ComponentType, inlineCode } from 'discord.js';
-import { PulseCommand, PulseCommandOptions, PulseCommandRunContext } from '../../../utilities/command.js';
+import { bold, ButtonStyle, ChatInputCommandInteraction, Colors, ComponentType, inlineCode, subtext } from 'discord.js';
+import { PulseCommand, PulseCommandOptions } from '../../../utilities/command.js';
+import { RollGamblingGame, RollGamblingGameWinningsType } from '../../../games/roll/game.gambling.js';
+import { RollGameOutcome } from '../../../games/roll/game.js';
+import { InteractionContext } from '../../../utilities/interaction-context.js';
 
 @ApplyOptions<PulseCommandOptions>({
   name: 'roll',
   description: 'Roll a dice.',
-  deferInitialReply: true,
+  deferInitialReply: true
 })
 export default class extends PulseCommand {
-  protected rig(bot: number, user: number): { bot: number, user: number } {
-    if (Math.random() <= 0.5) {
-      if (user < bot) [bot, user] = [user, bot];
-    } else {
-      if (user > bot) [user, bot] = [bot, user];
-    }
+  private getTimeoutMS(roll: RollGamblingGame): number {
+    switch (roll.getOutcome()) {
+      case RollGameOutcome.WIN: {
+        return 1_000;
+      }
 
-    return { bot, user };
+      default: {
+        return 250;
+      }
+    }
   }
 
-  public async run(ctx: PulseCommandRunContext) {
-    const { getRandomNumber } = ctx.utilities['number'];
-    const { createStackedText } = ctx.utilities['string'];
+  private getEmbedColor(roll: RollGamblingGame) {
+    switch (roll.getOutcome()) {
+      case RollGameOutcome.WIN: {
+        return Colors.Green;
+      }
 
-    const betAmount = ctx.interaction.options.getNumber('bet', true) ?? 0;
-    const [bot, user] = [getRandomNumber(1, 12), getRandomNumber(1, 12)];
-    const winnings = user > bot ? Math.round(betAmount * (0.01 + Math.random() * 2.24)) : user === bot ? 0 : -betAmount;
+      case RollGameOutcome.TIE: {
+        return Colors.Yellow;
+      }
 
-    if (betAmount >= ctx.player.economy.coins) {
-      return void await ctx.responder.send(builder =>
-        builder.setContent('You don\'t have enough coins to bet that much!')
-      );
+      case RollGameOutcome.LOSE: {
+        return Colors.Red;
+      }
+    }
+  }
+
+  public async run(ctx: InteractionContext<ChatInputCommandInteraction<'cached'>>) {
+    const { createStackedText, createTimeout } = { ...ctx.utilities['string'], ...ctx.utilities['promise'] };
+    const bet = ctx.interaction.options.getNumber('bet', true) ?? 0;
+    const player = await ctx.database.getPlayer(ctx.user.id);
+
+    if (bet >= player.economy.coins) {
+      return void (await ctx.responder.send((builder) => builder.setContent("You don't have enough coins to bet that much!")));
     }
 
-    ctx.updatePlayer(db => db.economy.coins += winnings);
+    const roll = new RollGamblingGame({
+      bet,
+      multipliers: { min: 0, max: 2.5, bonus: 0 },
+      sides: 12,
+      winningsType: RollGamblingGameWinningsType.Dice
+    });
 
-    await ctx.responder.send(builder =>
-      builder
-        .addEmbed(embed =>
-          embed
-            .setColor(Colors.Gold)
-            .setDescription(createStackedText(
-              `:game_die: ${bold('Rolling...')}`,
-              `:coin: ${bold(betAmount.toLocaleString() + ' CC')}`
-            ))
-            .setTimestamp()
-        )
+    await ctx.responder.send((builder) =>
+      builder.addEmbed((embed) =>
+        embed.setColor(Colors.White).setDescription(`:game_die: Rolling a ${bold(`D${roll.sides}`)} for ${bold('CC ' + bet.toLocaleString())}...`)
+      )
     );
 
-    await ctx.utilities['promise'].createTimeout(250, null);
-    ctx.responder.content.removeEmbed(0);
+    void roll.run();
 
-    await ctx.responder.edit(builder =>
+    await createTimeout(this.getTimeoutMS(roll), null);
+    await ctx.database.updatePlayer(ctx.user.id, (doc) => {
+      doc.economy.coins = Math.trunc(doc.economy.coins + roll.calculatedWinnings);
+      return doc;
+    });
+
+    void ctx.responder.content.removeEmbed(0);
+    await ctx.responder.edit((builder) =>
       builder
-        .addEmbed(embed =>
+        .addEmbed((embed) =>
           embed
-            .setTitle(`You ${user > bot ? 'won' : user === bot ? 'tied' : 'lost'}!`)
-            .setColor(user > bot ? Colors.Green : user === bot ? Colors.Yellow : Colors.Red)
+            .setAuthor({ name: `${ctx.user.globalName}'s Dice Roll` })
+            .setColor(this.getEmbedColor(roll))
             .setDescription(
               createStackedText(
-                `${bold('Net:')} ${user > bot ? '+' : '-'}${Math.abs(winnings).toLocaleString()} CC`,
-                `${bold('Coins:')} ${ctx.player.economy.coins.toLocaleString()} CC\n`,
-                user > bot
-                  ? bold(`You won ${inlineCode(`${(winnings / betAmount).toFixed(2)}x`)} of your bet!`)
-                  : user === bot
-                    ? 'We are even, lol. We tied against each other.'
-                    : 'You lost your bet. Better luck next time!'
+                `Coins: ${bold('CC ' + player.economy.coins.toLocaleString())}`,
+                `Winnings: ${bold('CC ' + Math.max(0, roll.calculatedWinnings).toLocaleString())}`,
+                subtext(`Net: ${bold(`CC ${roll.net.toLocaleString()}`)}\n`)
               )
             )
             .addFields([
               {
-                name: ctx.interaction.client.user.username,
-                value: `Rolled a ${inlineCode(bot.toString())}`,
+                name: `${ctx.user.displayName} (You)`,
+                value: `Rolled a ${inlineCode(roll.dice.value.toString())}`,
                 inline: true
               },
               {
-                name: ctx.interaction.user.displayName,
-                value: `Rolled a ${inlineCode(user.toString())}`,
+                name: `${ctx.user.client.user.username} (Opponent)`,
+                value: `Rolled a ${inlineCode(roll.opponent.value.toString())}`,
                 inline: true
               }
             ])
         )
-        .addComponentRow(
-          ComponentType.Button, 
-          (row) => row.addComponents(btn => 
+        .addComponentRow(ComponentType.Button, (row) => {
+          row.addComponents((btn) =>
             btn
-              .setCustomId(`roll:${Number(betAmount)}:1`)
-              .setLabel(`Reroll (CC ${betAmount.toLocaleString()})`)
+              .setCustomId(`roll:${Number(bet)}:1`)
+              .setEmoji('🎲')
+              .setLabel(`Play Again — CC ${bet.toLocaleString()}`)
               .setStyle(ButtonStyle.Primary)
-              .setDisabled(ctx.player.economy.coins < betAmount)
-          )
-        )
+              .setDisabled(player.economy.coins < bet)
+          );
+
+          return row;
+        })
     );
   }
 

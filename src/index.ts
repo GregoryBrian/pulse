@@ -4,7 +4,7 @@ import './utilities/env-loader.js';
 import { SapphireClient } from '@sapphire/framework';
 import { GatewayIntentBits } from 'discord.js';
 import { PiecesPath } from './utilities/paths.js';
-import { DatabaseConnector } from './database/connector/Connector.js';
+import { Database } from './database/db.js';
 import connect from './connect.js';
 
 const pulse = new SapphireClient({
@@ -13,7 +13,7 @@ const pulse = new SapphireClient({
 });
 
 // Load the database connector
-await new DatabaseConnector(process.env.DB_URI).connect();
+await new Database(process.env.DB_URI).connect();
 
 // Load the client
 await connect(pulse);

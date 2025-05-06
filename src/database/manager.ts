@@ -34,7 +34,7 @@ export class Manager<T extends ParentSchema> extends Collection<T['_id'], T> {
     return this.dehydrate(data as DocumentType<T>);
   }
 
-  public async update(id: string, documentFunction: (doc: T) => void) {
+  public async update(id: string, documentFunction: (doc: T) => void): Promise<T> {
     const doc = await this.fetch(id);
     const entry = this.debounced.get(id);
 
@@ -43,7 +43,7 @@ export class Manager<T extends ParentSchema> extends Collection<T['_id'], T> {
     if (entry) {
       void this.set(id, doc);
       void entry.refresh();
-      return;
+      return doc;
     }
 
     this.set(id, doc);
@@ -54,5 +54,7 @@ export class Manager<T extends ParentSchema> extends Collection<T['_id'], T> {
         await this.model.updateOne({ _id: id }, { $set: doc }).exec();
       }, 3_000)
     );
+
+    return doc;
   }
 }

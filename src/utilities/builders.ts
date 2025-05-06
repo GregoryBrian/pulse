@@ -343,9 +343,8 @@ export class EditMessageBuilder<TComponents extends ComponentRowBuilder.Componen
 }
 
 abstract class BaseInteractionMessageBuilder<
-  TComponents extends ComponentRowBuilder.ComponentTypes = ComponentRowBuilder.ComponentTypes,
-> extends BaseMessageBuilder<TComponents> {
-}
+  TComponents extends ComponentRowBuilder.ComponentTypes = ComponentRowBuilder.ComponentTypes
+> extends BaseMessageBuilder<TComponents> {}
 
 export class InteractionMessageContentBuilder<TComponents extends ComponentRowBuilder.ComponentTypes = ComponentRowBuilder.ComponentTypes>
   extends BaseInteractionMessageBuilder<TComponents>

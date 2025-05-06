@@ -4,6 +4,8 @@ import { prop } from '@typegoose/typegoose';
 import mongoose from 'mongoose';
 import { Payload } from '../types/index.js';
 
+export type UpdateSchemaFunction<S> = (schema: S) => S;
+
 export type TransformSchema<S> = {
   [K in keyof S]: S[K] extends Payload<unknown> ? PayloadToSchema<S[K]> : S[K];
 } & { _id: S extends { id: infer Id extends string | number } ? Id : never };
